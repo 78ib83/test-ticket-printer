@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test Reçu Thermique - SYMPLEXM_Printer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background-color: #f1f5f9;
+      color: #000000;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    /* Formulaire (masqué automatiquement lors de l'impression dans SYMPLEXM_Printer) */
+    .form-card {
+      width: 100%;
+      max-width: 420px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 16px;
+      font-family: Arial, sans-serif;
+    }
+
+    .form-card h1 {
+      font-size: 18px;
+      margin-bottom: 12px;
+      color: #0f172a;
+      text-align: center;
+    }
+
+    .field {
+      margin-bottom: 10px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 4px;
+      color: #334155;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid #94a3b8;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .btn-print {
+      width: 100%;
+      margin-top: 10px;
+      padding: 14px;
+      background-color: #0f172a;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-print:active {
+      opacity: 0.85;
+    }
+
+    /* Zone du reçu thermique */
+    .receipt {
+      width: 100%;
+      max-width: 340px;
+      background: #ffffff;
+      color: #000000;
+      padding: 12px;
+      border: 1px dashed #000000;
+    }
+
+    .receipt-header {
+      text-align: center;
+      border-bottom: 2px dashed #000000;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+    }
+
+    .receipt-header h2 {
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .receipt-header p {
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .receipt-meta {
+      font-size: 12px;
+      margin-bottom: 8px;
+      border-bottom: 1px dashed #000000;
+      padding-bottom: 6px;
+    }
+
+    .receipt-meta div {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+    }
+
+    table.receipt-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    table.receipt-table th,
+    table.receipt-table td {
+      border-bottom: 1px solid #000000;
+      padding: 5px 2px;
+      text-align: left;
+    }
+
+    table.receipt-table th.right,
+    table.receipt-table td.right {
+      text-align: right;
+    }
+
+    .receipt-total {
+      display: flex;
+      justify-content: space-between;
+      font-size: 16px;
+      font-weight: 900;
+      border-top: 2px solid #000000;
+      border-bottom: 2px solid #000000;
+      padding: 6px 0;
+      margin: 8px 0;
+    }
+
+    .receipt-footer {
+      text-align: center;
+      font-size: 11px;
+      margin-top: 8px;
+    }
+
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background: #ffffff;
+        padding: 0;
+      }
+      .receipt {
+        border: none;
+        max-width: 100%;
+        width: 100%;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- FORMULAIRE DE TEST (masqué à l'impression via .no-print) -->
+  <div class="form-card no-print">
+    <h1>Test Impression Thermique</h1>
+
+    <div class="field">
+      <label for="companyInput">Nom de la société / Agence</label>
+      <input type="text" id="companyInput" value="SYMPLEXM EXPRESS" oninput="updateReceipt()" />
+    </div>
+
+    <div class="field">
+      <label for="clientInput">Nom du client / Passager</label>
+      <input type="text" id="clientInput" value="Ibrahima Doumbia" oninput="updateReceipt()" />
+    </div>
+
+    <div class="field">
+      <label for="itemInput">Désignation / Trajet</label>
+      <input type="text" id="itemInput" value="Billet Ségou - Bamako" oninput="updateReceipt()" />
+    </div>
+
+    <div class="field">
+      <label for="qtyInput">Quantité</label>
+      <input type="number" id="qtyInput" value="1" min="1" oninput="updateReceipt()" />
+    </div>
+
+    <div class="field">
+      <label for="priceInput">Prix unitaire (FCFA)</label>
+      <input type="number" id="priceInput" value="5000" min="0" oninput="updateReceipt()" />
+    </div>
+
+    <div class="field">
+      <label for="paymentInput">Mode de paiement</label>
+      <select id="paymentInput" onchange="updateReceipt()">
+        <option value="Espèces">Espèces</option>
+        <option value="Orange Money">Orange Money</option>
+        <option value="Moov Money">Moov Money</option>
+      </select>
+    </div>
+
+    <button type="button" class="btn-print" onclick="printTicket()">
+      IMPRIMER LE REÇU
+    </button>
+  </div>
+
+  <!-- APERÇU DU REÇU À IMPRIMER -->
+  <div class="receipt" id="receiptArea">
+    <div class="receipt-header">
+      <h2 id="rCompany">SYMPLEXM EXPRESS</h2>
+      <p>Ségou - Mali | Tél: +223 00 00 00 00</p>
+    </div>
+
+    <div class="receipt-meta">
+      <div><span>Ticket N° :</span><strong id="rNumber">#SMX-001</strong></div>
+      <div><span>Date :</span><span id="rDate">--/--/---- --:--</span></div>
+      <div><span>Client :</span><strong id="rClient">Ibrahima Doumbia</strong></div>
+      <div><span>Paiement :</span><span id="rPayment">Espèces</span></div>
+    </div>
+
+    <table class="receipt-table">
+      <thead>
+        <tr>
+          <th>Désignation</th>
+          <th class="right">Qté</th>
+          <th class="right">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="rItem">Billet Ségou - Bamako</td>
+          <td class="right" id="rQty">1</td>
+          <td class="right" id="rSubTotal">5 000 F</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="receipt-total">
+      <span>TOTAL PAYÉ</span>
+      <span id="rTotal">5 000 FCFA</span>
+    </div>
+
+    <div class="receipt-footer">
+      <p>Merci pour votre confiance !</p>
+      <p>*** TEST IMPRESSION SYMPLEXM ***</p>
+    </div>
+  </div>
+
+  <script>
+    function formatNumber(n) {
+      return Number(n || 0).toLocaleString('fr-FR');
+    }
+
+    function updateReceipt() {
+      const company = document.getElementById('companyInput').value.trim() || 'SYMPLEXM EXPRESS';
+      const client = document.getElementById('clientInput').value.trim() || 'Client';
+      const item = document.getElementById('itemInput').value.trim() || 'Ticket';
+      const qty = Math.max(1, parseInt(document.getElementById('qtyInput').value || '1', 10));
+      const price = Math.max(0, parseInt(document.getElementById('priceInput').value || '0', 10));
+      const payment = document.getElementById('paymentInput').value;
+      const total = qty * price;
+
+      document.getElementById('rCompany').textContent = company;
+      document.getElementById('rClient').textContent = client;
+      document.getElementById('rItem').textContent = item;
+      document.getElementById('rQty').textContent = qty;
+      document.getElementById('rSubTotal').textContent = formatNumber(total) + ' F';
+      document.getElementById('rTotal').textContent = formatNumber(total) + ' FCFA';
+      document.getElementById('rPayment').textContent = payment;
+    }
+
+    function initReceiptMeta() {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('fr-FR') + ' ' +
+        now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const randomNum = Math.floor(100 + Math.random() * 900);
+
+      document.getElementById('rDate').textContent = dateStr;
+      document.getElementById('rNumber').textContent = '#SMX-' + randomNum;
+      updateReceipt();
+    }
+
+    function printTicket() {
+      initReceiptMeta();
+      window.print();
+    }
+
+    initReceiptMeta();
+  </script>
+</body>
+</html>
